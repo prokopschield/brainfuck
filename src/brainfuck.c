@@ -45,6 +45,7 @@
 #define LJB_OFFSET (0x2000000)
 
 #define ERR_READING_FILE "Error %sing file %s: %s\n"
+#define ERR_EOF_WITHIN_LOOP "Program is in %d loop(s), EOF encountered at IP=0x%x\n"
 
 typedef struct registers {
     uint32_t IP;
@@ -114,7 +115,22 @@ int main(int argc, const char* argv[])
             }
             break;
         case I_LOOP:
-            *(++loop_jump_pos) = registers->IP;
+            if (memory[registers->VP]) {
+                *(++loop_jump_pos) = registers->IP;
+            } else {
+                for (int i = 1; i; ++registers->IP) {
+                    if (memory[registers->IP] == I_LOOP) {
+                        ++i;
+                    } else if (memory[registers->IP] == I_ENDL) {
+                        --i;
+                    } else if (memory[registers->IP] == '\0') {
+                        memory[registers->IP--] = getchar();
+                    } else if (memory[registers->IP] == I_EXIT && feof(stdin)) {
+                        fprintf(stderr, ERR_EOF_WITHIN_LOOP, i, (unsigned)registers->IP - PROGRAM_OFFSET);
+                        return 1;
+                    }
+                }
+            }
             break;
         case I_ENDL:
             if (memory[registers->VP]) {
