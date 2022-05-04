@@ -129,6 +129,7 @@ int main(int argc, const char* argv[])
                             memory[registers->IP--] = c;
                         } else {
                             fprintf(stderr, ERR_EOF_WITHIN_LOOP, i, (unsigned)registers->IP - PROGRAM_OFFSET);
+                            munmap(memory, BUFFER_SIZE);
                             return 1;
                         }
                     }
